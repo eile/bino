@@ -1141,6 +1141,11 @@ player_equalizer::player_equalizer(int *argc, char *argv[], bool flat_screen)
 {
     /* Initialize Equalizer */
     initErrors();
+
+    // WAR for https://github.com/Eyescale/Equalizer/issues/81
+    if( !getenv( "EQ_WINDOW_IATTR_HINT_SWAPSYNC" ))
+        setenv( "EQ_WINDOW_IATTR_HINT_SWAPSYNC", "0", 1 );
+
     if (!eq::init( *argc, argv, &_impl->node_factory ))
     {
         throw exc(_("Equalizer initialization failed."));
