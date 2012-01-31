@@ -1123,22 +1123,33 @@ public:
 /*
  * player_equalizer
  */
+namespace detail
+{
+class player_equalizer
+{
+public:
+    player_equalizer( const bool flat ) : config( 0 ), flat_screen( flat ) {}
+    eq_node_factory node_factory;
+    eq_config *config;
+    const bool flat_screen;
+};
+}
 
-player_equalizer::player_equalizer(int *argc, char *argv[], bool flat_screen) :
-    player(player::slave), _flat_screen(flat_screen)
+player_equalizer::player_equalizer(int *argc, char *argv[], bool flat_screen)
+        : player(player::slave)
+        , _impl( new detail::player_equalizer( flat_screen ))
 {
     /* Initialize Equalizer */
     initErrors();
-    _node_factory = static_cast<void *>(new eq_node_factory);
-    if (!eq::init(*argc, argv, static_cast<eq::NodeFactory *>(_node_factory)))
+    if (!eq::init( *argc, argv, &_impl->node_factory ))
     {
         throw exc(_("Equalizer initialization failed."));
     }
     /* Get a configuration */
-    _config = static_cast<void *>(eq::getConfig(*argc, argv));
+    _impl->config = static_cast<eq_config *>(eq::getConfig(*argc, argv));
     // The following code is only executed on the application node because
     // eq::getConfig() does not return on other nodes.
-    if (!_config)
+    if (!_impl->config)
     {
         throw exc(_("Cannot get equalizer configuration."));
     }
@@ -1146,13 +1157,12 @@ player_equalizer::player_equalizer(int *argc, char *argv[], bool flat_screen) :
 
 player_equalizer::~player_equalizer()
 {
-    delete static_cast<eq_node_factory *>(_node_factory);
+    delete _impl;
 }
 
 void player_equalizer::open(const player_init_data &init_data)
 {
-    eq_config *config = static_cast<eq_config *>(_config);
-    if (!config->init(init_data, _flat_screen))
+    if (!_impl->config->init(init_data, _impl->flat_screen))
     {
         throw exc(_("Equalizer configuration initialization failed."));
     }
@@ -1160,14 +1170,14 @@ void player_equalizer::open(const player_init_data &init_data)
 
 void player_equalizer::run()
 {
-    eq_config *config = static_cast<eq_config *>(_config);
-    while (config->isRunning())
+    while (_impl->config->isRunning())
     {
-        config->startFrame();
-        config->finishFrame();
+        _impl->config->startFrame();
+        _impl->config->finishFrame();
     }
-    config->exit();
-    eq::releaseConfig(config);
+    _impl->config->exit();
+    eq::releaseConfig( _impl->config);
+    _impl->config = 0;
     eq::exit();
     exitErrors();
 }

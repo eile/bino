@@ -38,6 +38,9 @@
 
 #include "str.h"
 
+#ifndef ICONV_CONST // undefined on OS X
+#  define ICONV_CONST
+#endif
 
 #ifndef HAVE_VASPRINTF
 static int vasprintf(char **strp, const char *format, va_list args)

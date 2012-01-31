@@ -27,13 +27,12 @@
 
 #include "player.h"
 
+namespace detail { class player_equalizer; }
 
 class player_equalizer : public player
 {
 private:
-    void *_node_factory;
-    void *_config;
-    bool _flat_screen;
+    detail::player_equalizer* const _impl;
 
 public:
     player_equalizer(int *argc, char *argv[], bool flat_screen);
